@@ -8,10 +8,13 @@ dependencies = [
     "fastapi>=0.115.12",
     "langchain-community>=0.3.24",
     "langchain-huggingface>=0.2.0",
+    "langchain-openai>=0.3.18",
     "langchain-text-splitters>=0.3.8",
     "llama-index>=0.12.37",
+    "python-dotenv>=1.1.0",
     "supabase>=2.15.1",
     "torch>=2.7.0",
     "transformers>=4.52.1",
     "uvicorn>=0.34.2",
+    "wikipedia>=1.4.0",
 ]
