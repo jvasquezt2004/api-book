@@ -10,6 +10,11 @@ class SearchParams(BaseModel):
     limit: int = 10
     offset: int = 0
 
+class GetSummaryParams(BaseModel):
+    title: str
+    original_description: str
+    
+
 class SearchResult(BaseModel):
     """
     Format for individual search results
