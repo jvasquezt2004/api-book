@@ -15,6 +15,10 @@ class GetSummaryParams(BaseModel):
     original_description: str
     
 
+class UploadBookParams(BaseModel):
+    content: str
+    metadata: Dict[str, Any]
+
 class SearchResult(BaseModel):
     """
     Format for individual search results
@@ -38,3 +42,11 @@ class ErrorResponse(BaseModel):
     """
     error: str
     details: Optional[str] = None
+
+class ClassifyBookParams(BaseModel):
+    """
+    Parameters for classifying a book's content to get category and sentiment
+    """
+    content: str  # El contenido es obligatorio
+    category: Optional[str] = None  # Categoría opcional, se obtendrá automáticamente si es None
+    dominant_sentiment: Optional[str] = None  # Sentimiento opcional, se obtendrá automáticamente si es None
