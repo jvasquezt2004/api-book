@@ -16,17 +16,26 @@ import uuid
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from transformers import pipeline
+from huggingface_hub import InferenceClient
+import os
 
 app = FastAPI()
 
+# Configuración de CORS para permitir solicitudes desde la app React Native y otros orígenes
 origins = [
     "http://localhost",
     "http://localhost:8080",
+    "http://localhost:3000",
+    "http://localhost:19000",  # Expo en desarrollo
+    "http://localhost:19006",  # Expo Web
+    "capacitor://localhost",   # Capacitor
+    "http://192.168.1.0",      # IP local común para pruebas
+    "*"                        # Cualquier origen (usar con precaución en producción)
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Permitir solicitudes de cualquier origen para desarrollo
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -285,10 +294,6 @@ async def classify_book(params: ClassifyBookParams):
         category = params.category
         if not category:
             try:
-                # Inicializar el clasificador zero-shot
-                classifier = pipeline("zero-shot-classification", 
-                                     model="facebook/bart-large-mnli")
-                
                 # Definir posibles categorías de libros
                 categories = [
                     "Fiction", "Non-fiction", "Science Fiction", "Fantasy", "Mystery", 
@@ -297,15 +302,51 @@ async def classify_book(params: ClassifyBookParams):
                     "Art", "Thriller", "Horror", "Young Adult", "Children"
                 ]
                 
-                # Obtener solo los primeros 1024 tokens para el clasificador
+                # Obtener solo los primeros 4000 caracteres para el clasificador
                 text_sample = params.content[:4000] if len(params.content) > 4000 else params.content
                 
-                # Clasificar el contenido
-                classification = classifier(text_sample, categories)
+                # Verificar si debemos usar la API de inferencia de Hugging Face o el modelo local
+                use_inference_api = os.getenv("USE_HUGGINGFACE_API", "false").lower() == "true"
+                hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
                 
-                # Obtener la categoría con mayor puntuación
-                category = classification['labels'][0]
-                score = classification['scores'][0]
+                if use_inference_api and hf_token:
+                    try:
+                        # Usar el cliente de inferencia de Hugging Face
+                        inference = InferenceClient(
+                            model="facebook/bart-large-mnli",
+                            token=hf_token
+                        )
+                        # Llamar a la API de inferencia con el cliente moderno
+                        classification = inference.zero_shot_classification(
+                            inputs=text_sample,
+                            candidate_labels=categories
+                        )
+                        # Obtener la categoría con mayor puntuación
+                        category = classification['labels'][0]
+                        score = classification['scores'][0]
+                        
+                        # Añadir información de cómo se obtuvo la clasificación
+                        result["model_source"] = "huggingface_api"
+                        
+                    except Exception as e:
+                        # En caso de error, intentar con el modelo local
+                        result["api_error"] = str(e)
+                        use_inference_api = False
+                
+                if not use_inference_api or not hf_token:
+                    # Inicializar el clasificador zero-shot local
+                    classifier = pipeline("zero-shot-classification", 
+                                        model="facebook/bart-large-mnli")
+                    
+                    # Clasificar el contenido localmente
+                    classification = classifier(text_sample, categories)
+                    
+                    # Obtener la categoría con mayor puntuación
+                    category = classification['labels'][0]
+                    score = classification['scores'][0]
+                    
+                    # Añadir información de cómo se obtuvo la clasificación
+                    result["model_source"] = "local_model"
                 
                 result["category"] = category
                 result["category_score"] = score
