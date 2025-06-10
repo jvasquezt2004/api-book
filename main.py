@@ -10,7 +10,6 @@ from schemas import SearchParams, SearchResult, SearchResponse, ErrorResponse, G
 import wikipedia
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
-from llama_index.readers.wikipedia import WikipediaReader
 from llama_index.core.llms import ChatMessage, MessageRole
 import uuid
 import nltk
