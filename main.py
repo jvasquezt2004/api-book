@@ -62,7 +62,7 @@ def read_root():
     return {"Hello": "World"}
 
 @app.post("/get_summary")
-async def get_summary(params: GetSummaryParams = Depends()):
+async def get_summary(params: GetSummaryParams):
     def get_wikipedia_content(title: str, sentences_per_section: int = 10, max_chars: int = 3000):
         try:
             page_results = wikipedia.search(title, results=1) 
